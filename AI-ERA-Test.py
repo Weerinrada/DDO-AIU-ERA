@@ -378,7 +378,7 @@ def run_analysis_in_parallel(
     return comp_info, comp_fin
 
 
-def fuzzy_match(x, keyword, threshold=80):
+def fuzzy_match(x, keyword, threshold=95):
     return fuzz.partial_ratio(x.lower(), keyword.lower()) >= threshold
 
 
