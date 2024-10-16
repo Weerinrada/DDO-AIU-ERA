@@ -190,7 +190,7 @@ def get_juristic_id_news(company_name, llm):
     print(company_news)
     print("\n เริ่ม search ข้อมูล 2")
 
-    result_search = search(f"ข่าว + {comp_name}", num_results=10, advanced=True)
+    result_search = search(f"ข่าว + {comp_name}", num_results= 15, advanced=True)
     # result_s = {}
     result_s = []
     for i, result in enumerate(result_search):
