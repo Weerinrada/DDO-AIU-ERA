@@ -273,10 +273,14 @@ def format_analysis(analysis):
     return [line.strip() for line in analysis.split("\n") if line.strip()]
 
 
+from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
+
 def get_comp_info(llm, company_name, fin_data, data, company_news, company_officers):
-    comp_profile = fin_data["assetProfile"]
+    comp_profile = fin_data.get("assetProfile", {})
+    
     system_template = """You are specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
     system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
+    
     human_template_company_detail = """Analyze the following data of the company {company_name} using {data} or {comp_profile} and give the answer in Thai language:
 
     Company information:
@@ -303,12 +307,10 @@ def get_comp_info(llm, company_name, fin_data, data, company_news, company_offic
     do not show any financial data.
     Please structure your answer in clear paragraphs, use short sentences for easy reading, and use headings or bullet points for sub-topics as appropriate."""
 
-    human_message_prompt_company_detail = HumanMessagePromptTemplate.from_template(
-        human_template_company_detail
-    )
-    chat_prompt_comp_detail = ChatPromptTemplate.from_messages(
-        [system_message_prompt, human_message_prompt_company_detail]
-    )
+    human_message_prompt_company_detail = HumanMessagePromptTemplate.from_template(human_template_company_detail)
+    
+    chat_prompt_comp_detail = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt_company_detail])
+    
     messages_comp_detail = chat_prompt_comp_detail.format_prompt(
         company_name=company_name,
         data=data,
@@ -317,11 +319,9 @@ def get_comp_info(llm, company_name, fin_data, data, company_news, company_offic
         company_officers=company_officers,
     ).to_messages()
 
-    response = llm.invoke(
-        messages_comp_detail, temperature=0.0, max_tokens=4096, top_p=0.99, top_k=250
-    )
-    return response.content if hasattr(response, "content") else str(response)
-
+    response = llm(messages_comp_detail, temperature=0.0, max_tokens=4096, top_p=0.99, top_k=250)
+    
+    return response.content if hasattr(response, 'content') else str(response)
 
 def get_comp_fin(llm, company_name, fin_data, data, company_news):
     system_template = """You are specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
@@ -375,9 +375,8 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
     )
     return response.content if hasattr(response, "content") else str(response)
 
-
 def run_analysis_in_parallel(
-    llm, company_name, data, fin_data, company_news, company_officers
+    llm, company_name, data, fin_data, company_news, company_officers, comp_profile_df
 ):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         comp_info = executor.submit(
@@ -388,6 +387,7 @@ def run_analysis_in_parallel(
             data,
             company_news,
             company_officers,
+            comp_profile_df,
         )
         comp_fin = executor.submit(
             get_comp_fin, llm, company_name, fin_data, data, company_news
@@ -399,7 +399,6 @@ def run_analysis_in_parallel(
     comp_fin = format_analysis(str(comp_fin))
 
     return comp_info, comp_fin
-
 
 def fuzzy_match(x, keyword, threshold=95):
     return fuzz.partial_ratio(x.lower(), keyword.lower()) >= threshold
