@@ -272,66 +272,59 @@ def get_financial_data(juristic_id, symbol=None):
 def format_analysis(analysis):
     return [line.strip() for line in analysis.split("\n") if line.strip()]
 
-def get_comp_info(llm, company_name, fin_data, data, company_news, company_officers, extra_info=None):
-    comp_profile = fin_data.get("assetProfile", {}) if isinstance(fin_data, dict) else {}
-    
-    # แปลง DataFrame เป็น dict หรือ string ตามความเหมาะสม
-    if isinstance(data, pd.DataFrame):
-        data = data.to_dict(orient='records') if not data.empty else "No data available"
-    
-    if isinstance(company_officers, pd.DataFrame):
-        company_officers = company_officers.to_dict(orient='records') if not company_officers.empty else "No officer data available"
 
+def get_comp_info(
+    llm, company_name, fin_data, data, company_news, company_officers, comp_profile_df
+):
+    comp_profile = fin_data["assetProfile"]
     system_template = """You are specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
     system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
-    
-    human_template_company_detail = """Analyze the following data of the company {company_name} and give the answer in Thai language:
+    human_template_company_detail = """Analyze the following data of the company {company_name} using {data} or {comp_profile} and give the answer in Thai language:
 
     Company information:
     {comp_profile} and {data} 
 
-    Company news:
+    and
     {company_news}
 
     Please provide a comprehensive analysis of the company's data, including:
 
-    Company Overview: Summarize the company overview, including the full name. Indicate whether it's a listed company or not based on available information. Use information from {data} and {company_news}.
+    Company Overview: Summarize the company overview, including the full name. If the company name doesn't match or there's no information in the stock market, indicate that it's not a listed company and use information from {data} and {company_news}. If the company name matches or has information in the stock market, indicate that it's a listed company, using information from {comp_profile}, {comp_profile_df}, and {company_news}. If there's no juristic ID, use information from {company_news} 
         - Registered capital
         - Registration date
         - Company status, e.g., still operating or dissolved
-        - Changes in company status (if available)
-        - Juristic ID of the company: {juristic_id}
+        - Changes in company status (must be provided, if not available, explain)
+        - Juristic ID of the company
         - Business size (S/M/L)
         - Business group
         - Type of juristic or company type
         - Company address or location (include postal code if available)
-        - Phone number (if available)
-        - Website (if available)
-        - Company officers: {company_officers}
-    Do not show any financial data.
-    Please structure your answer in clear paragraphs, use short sentences for easy reading, and use headings or bullet points for sub-topics as appropriate.
+        - Phone number (must be provided)
+        - Website (must be provided, if not available, explain)
+        - display all list company_officers names from {company_officers} (must be provided in English language only, if no information, explain), request answer in English language
+    do not show any financial data.
+    Please structure your answer in clear paragraphs, use short sentences for easy reading, and use headings or bullet points for sub-topics as appropriate."""
 
-    Additional information (if available):
-    {extra_info}
-    """
-
-    human_message_prompt_company_detail = HumanMessagePromptTemplate.from_template(human_template_company_detail)
-    
-    chat_prompt_comp_detail = ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt_company_detail])
-    
+    human_message_prompt_company_detail = HumanMessagePromptTemplate.from_template(
+        human_template_company_detail
+    )
+    chat_prompt_comp_detail = ChatPromptTemplate.from_messages(
+        [system_message_prompt, human_message_prompt_company_detail]
+    )
     messages_comp_detail = chat_prompt_comp_detail.format_prompt(
         company_name=company_name,
         data=data,
         comp_profile=comp_profile,
         company_news=company_news,
         company_officers=company_officers,
-        extra_info=extra_info or "No additional information provided.",
-        juristic_id="0105561093893"
+        comp_profile_df=comp_profile_df,
     ).to_messages()
 
-    response = llm(messages_comp_detail, temperature=0.0, max_tokens=4096, top_p=0.99, top_k=250)
-    
-    return response.content if hasattr(response, 'content') else str(response)
+    response = llm.invoke(
+        messages_comp_detail, temperature=0.0, max_tokens=4096, top_p=0.99, top_k=250
+    )
+    return response.content if hasattr(response, "content") else str(response)
+
 
 def get_comp_fin(llm, company_name, fin_data, data, company_news):
     system_template = """You are specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
@@ -385,6 +378,7 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
     )
     return response.content if hasattr(response, "content") else str(response)
 
+
 def run_analysis_in_parallel(
     llm, company_name, data, fin_data, company_news, company_officers, comp_profile_df
 ):
@@ -410,8 +404,10 @@ def run_analysis_in_parallel(
 
     return comp_info, comp_fin
 
-def fuzzy_match(x, keyword, threshold=95):
+
+def fuzzy_match(x, keyword, threshold=98):
     return fuzz.partial_ratio(x.lower(), keyword.lower()) >= threshold
+
 
 
 def extract_table_data(data):
@@ -559,14 +555,34 @@ def display_financial_analysis(formatted_financial_analysis):
 
 
 def display_references(company_news, url_fin):
-    if company_news:
-        st.markdown("### แหล่งอ้างอิง:")
-        for url in url_fin:
-            clickable_title1 = make_clickable(url["title"], url["url"])
-            st.markdown(clickable_title1, unsafe_allow_html=True)
-        for entry in company_news:
-            clickable_title = make_clickable(entry["title"], entry["url"])
+    st.markdown("### แหล่งอ้างอิง:")
+
+    # แสดง url_fin
+    if url_fin:
+        for item in url_fin:
+            if isinstance(item, dict):
+                # กรณีที่ url_fin เป็นลิสต์ของดิกชันนารี
+                clickable_title = make_clickable(
+                    item.get("title", "No title"), item.get("url", "#")
+                )
+            elif isinstance(item, str):
+                # กรณีที่ url_fin เป็นลิสต์ของ URL
+                clickable_title = make_clickable("Financial Data Source", item)
+            else:
+                # กรณีอื่นๆ ให้ข้ามไป
+                continue
             st.markdown(clickable_title, unsafe_allow_html=True)
+
+    # แสดง company_news
+    if company_news:
+        for entry in company_news:
+            if isinstance(entry, dict):
+                clickable_title = make_clickable(
+                    entry.get("title", "No title"), entry.get("url", "#")
+                )
+                st.markdown(clickable_title, unsafe_allow_html=True)
+            elif isinstance(entry, str):
+                st.markdown(entry)
 
 
 def display_feedback():
@@ -582,7 +598,6 @@ def display_feedback():
         for feed in feedback:
             get_feedback = make_clickable(feed["Feedback"], feed["link"])
             st.markdown(get_feedback, unsafe_allow_html=True)
-
 
 
 def process_and_display_results(company_name, llm):
@@ -636,14 +651,17 @@ def process_and_display_results(company_name, llm):
     for item in formatted_company_details_analysis:
         slowly_display_text(item, delay=0.001)
 
+    print("Result from AI: ")
     display_financial_analysis(formatted_financial_analysis)
+    print("\n create Ref: ")
+    print(url_fin)
+    print(company_news)
     display_references(company_news, url_fin)
+    print("\n create Feedback: ")
+
     display_feedback()
 
     st.session_state.analysis_done = True
-
-
-
 
 def main():
     st.set_page_config(
