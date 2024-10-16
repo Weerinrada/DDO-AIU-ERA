@@ -160,7 +160,7 @@ def get_juristic_id_news(company_name, llm):
             )
         else:
             print(f"Found company information:")
-        print(result)
+        # print(result)
 
     if not result.empty:
         symbol = result.iloc[0]["หลักทรัพย์"]
@@ -173,7 +173,7 @@ def get_juristic_id_news(company_name, llm):
     else:
         comp_profile = df[df["หลักทรัพย์"] == symbol]
 
-    print(comp_profile)
+    # print(comp_profile)
 
     print("Comp Profile: ", comp_profile)
     start_search = time.time()
@@ -187,7 +187,7 @@ def get_juristic_id_news(company_name, llm):
         }
         for item in result_query.get("items", [])
     ]
-    print(company_news)
+    # print(company_news)
     print("\n เริ่ม search ข้อมูล 2")
 
     result_search = search(f"ข่าว + {comp_name}", num_results=15, advanced=True)
@@ -202,11 +202,11 @@ def get_juristic_id_news(company_name, llm):
         # result_s[f"result_{i}"] = result_data
         result_s.append(result_data)
 
-    print(result_s)
+    # print(result_s)
     print("\n เริ่ม รวมข้อมูล 1 + 2")
 
     company_news.append(result_s)
-    print("Company Appended: ", company_news)
+    # print("Company Appended: ", company_news)
 
     print(f"\n Running time process Search for News: {time.time() - start_search}")
 
@@ -277,7 +277,7 @@ def get_comp_info(
     llm, company_name, fin_data, data, company_news, company_officers, comp_profile_df
 ):
     comp_profile = fin_data["assetProfile"]
-    system_template = """You are a female who is  specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
+    system_template = """You are a female who is specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
     system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
     human_template_company_detail = """Analyze the following data of the company {company_name} using {data} or {comp_profile} and give the answer in Thai language:
 
@@ -327,7 +327,7 @@ def get_comp_info(
 
 
 def get_comp_fin(llm, company_name, fin_data, data, company_news):
-    system_template = """You are a female who is  specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
+    system_template = """You are a female who is specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
     system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
     human_template_company_fin = """Analyze the following data of the company {company_name} and give the answer in Thai language:
 
@@ -707,13 +707,13 @@ def process_and_display_results(company_name, llm):
     print("Result from AI: ")
     display_financial_analysis(formatted_financial_analysis)
     print("\n create Ref: ")
-    print(url_fin)
-    print(company_news)
+    # print(url_fin)
+    # print(company_news)
     display_references(company_news, url_fin)
     print("\n create Feedback: ")
 
     display_feedback()
-
+    print("\n All PROCESS SUCCESS!!!!")
     st.session_state.analysis_done = True
 
 
