@@ -190,7 +190,7 @@ def get_juristic_id_news(company_name, llm):
     print(company_news)
     print("\n เริ่ม search ข้อมูล 2")
 
-    result_search = search(f"ข่าว + {comp_name}", num_results= 15, advanced=True)
+    result_search = search(f"ข่าว + {comp_name}", num_results=15, advanced=True)
     # result_s = {}
     result_s = []
     for i, result in enumerate(result_search):
@@ -277,7 +277,7 @@ def get_comp_info(
     llm, company_name, fin_data, data, company_news, company_officers, comp_profile_df
 ):
     comp_profile = fin_data["assetProfile"]
-    system_template = """You are specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
+    system_template = """You are a female who is  specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
     system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
     human_template_company_detail = """Analyze the following data of the company {company_name} using {data} or {comp_profile} and give the answer in Thai language:
 
@@ -327,7 +327,7 @@ def get_comp_info(
 
 
 def get_comp_fin(llm, company_name, fin_data, data, company_news):
-    system_template = """You are specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
+    system_template = """You are a female who is  specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
     system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
     human_template_company_fin = """Analyze the following data of the company {company_name} and give the answer in Thai language:
 
@@ -791,6 +791,18 @@ def main():
                     st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูล: {e}")
                     st.warning("กรุณาระบุชื่อบริษัทใหม่อีกครั้ง")
 
+    # if st.session_state.analysis_done:
+    #     if st.button("ดาวน์โหลดผลการวิเคราะห์ (PDF)"):
+    #         try:
+    #             pdf = create_pdf_report(company_name, st.session_state.analysis_results)
+    #             st.download_button(
+    #                 label="คลิกเพื่อดาวน์โหลด PDF",
+    #                 data=pdf,
+    #                 file_name=f"{company_name}_analysis.pdf",
+    #                 mime="application/pdf",
+    #             )
+    #         except Exception as e:
+    #             st.error(f"เกิดข้อผิดพลาดในการสร้าง PDF: {e}")
     st.sidebar.markdown("---")
     st.sidebar.markdown("### เวอร์ชันแอปพลิเคชัน")
     st.sidebar.info("AI E.R.A. v1.0.0")
