@@ -326,6 +326,7 @@ def get_comp_info(
     return response.content if hasattr(response, "content") else str(response)
 
 
+
 def get_comp_fin(llm, company_name, fin_data, data, company_news):
     system_template = """You are a female who is specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
     system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
@@ -335,7 +336,7 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
     {company_news} and {data}
     
 1. Analysis of financial statements and the company's financial situation. If it's a listed company, analyze from {fin_data}. If not a listed company in the stock market DO NOT Show any Data and explain why:
-    - Income statement, analyzing financial statements (สินทรัพย์รวม (Total Assets), Equity, Total Revenue, Cost Of Revenue, Net Profit or (Net Income From Continuing Operation Net Minority Interest)(กำไรสุทธิ), Profit (Loss) from Other Activities (กำไร (ขาดทุน) จากกิจกรรมอื่น) (with symbol +/-), Total Debt, Net Dept, for the past 3 years, (Must be provided data in table format only)
+    - Analyzing financial statements (Total revenue, Equity, Cost Of Revenue, Net Income, Profit (Loss) from Other Activities (with symbol +/-), Total Debt, Net Dept, for the past 3 years, (Must be provided data in table format only)
     - Shareholders' equity or Stockholders Equity
     - Show liquidity indicators such as Return of Asset (ROA in %, yoy), Return of Equity (ROE in %, yoy), D/E Ratio (Debt to Equity Ratio), current ratio, and quick ratio
     - Summarize the company's financial liquidity
@@ -431,6 +432,7 @@ Please structure your answer in clear paragraphs, use short sentences for easy r
         messages_comp_info, temperature=0.0, max_tokens=4096, top_p=0.9999
     )
     return response.content if hasattr(response, "content") else str(response)
+
 
 
 def run_analysis_in_parallel(
@@ -791,18 +793,6 @@ def main():
                     st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูล: {e}")
                     st.warning("กรุณาระบุชื่อบริษัทใหม่อีกครั้ง")
 
-    # if st.session_state.analysis_done:
-    #     if st.button("ดาวน์โหลดผลการวิเคราะห์ (PDF)"):
-    #         try:
-    #             pdf = create_pdf_report(company_name, st.session_state.analysis_results)
-    #             st.download_button(
-    #                 label="คลิกเพื่อดาวน์โหลด PDF",
-    #                 data=pdf,
-    #                 file_name=f"{company_name}_analysis.pdf",
-    #                 mime="application/pdf",
-    #             )
-    #         except Exception as e:
-    #             st.error(f"เกิดข้อผิดพลาดในการสร้าง PDF: {e}")
     st.sidebar.markdown("---")
     st.sidebar.markdown("### เวอร์ชันแอปพลิเคชัน")
     st.sidebar.info("AI E.R.A. v1.0.0")
