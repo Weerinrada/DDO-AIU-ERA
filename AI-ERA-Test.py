@@ -726,6 +726,5 @@ def main():
     st.sidebar.info("AI E.R.A. v1.0.0")
     st.sidebar.markdown("© 2024 AI-UNDERWRITING [DDO-Krungsri Auto]")
 
-
 if __name__ == "__main__":
     main()
