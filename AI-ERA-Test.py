@@ -326,6 +326,7 @@ def get_comp_info(
     return response.content if hasattr(response, "content") else str(response)
 
 
+
 def get_comp_fin(llm, company_name, fin_data, data, company_news):
     system_template = """You are specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
     system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
@@ -353,12 +354,66 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
     - Analyze the suitability of approving leasing credit for employees of this company for car leasing product
     - Consider risk factors and positive factors that may affect employees' ability to repay debt
 
-5. Brief Summary and Recommendations:
+5. Assess the financial risk of the company or organization in Thailand, categorizing it into levels 0-5 with conditions for each level as follows:
+        0 - No risk:
+        - Liquidity Ratio > 2.0
+        - Debt to Equity Ratio < 0.5
+        - Net Profit Margin > 20%
+        - Revenue Growth Rate > 15% per year
+        - Never defaulted on debt
+        - Good revenue diversification (no single customer exceeds 10% of total revenue)
+        - Positive news about business growth, innovation, or continuous market expansion
+
+        1 - Very low risk:
+        - Liquidity Ratio 1.5 - 2.0
+        - Debt to Equity Ratio 0.5 - 1.0
+        - Net Profit Margin 15% - 20%
+        - Revenue Growth Rate 10% - 15% per year
+        - Defaulted no more than once in the past 5 years
+        - One customer accounts for 10-20% of revenue
+        - Mostly positive news, with minor negative news that doesn't impact the business
+
+        2 - Low risk:
+        - Liquidity Ratio 1.2 - 1.49
+        - Debt to Equity Ratio 1.01 - 1.5
+        - Net Profit Margin 10% - 14.99%
+        - Revenue Growth Rate 5% - 9.99% per year
+        - Defaulted no more than twice in the past 5 years
+        - One customer accounts for 20-30% of revenue
+        - Equal mix of positive and negative news, but negative news is not severe
+
+        3 - Moderate risk:
+        - Liquidity Ratio 1.0 - 1.19
+        - Debt to Equity Ratio 1.51 - 2.0
+        - Net Profit Margin 5% - 9.99%
+        - Revenue Growth Rate 0% - 4.99% per year
+        - Defaulted three times in the past 5 years
+        - One customer accounts for 30-40% of revenue
+        - Increasing negative news, such as declining market share or operational issues
+
+        4 - High risk:
+        - Liquidity Ratio 0.8 - 0.99
+        - Debt to Equity Ratio 2.01 - 2.5
+        - Net Profit Margin 0% - 4.99%
+        - Revenue Growth Rate negative up to 5% per year
+        - Defaulted more than three times in the past 5 years
+        - One customer accounts for 40-50% of revenue
+        - Mostly negative news, such as loss of major clients, legal issues, or credit rating downgrades
+
+        5 - Very high risk:
+        - Liquidity Ratio < 0.8
+        - Debt to Equity Ratio > 2.5
+        - Net Profit Margin < 0% (loss)
+        - Revenue Growth Rate negative more than 5% per year
+        - In business rehabilitation or bankruptcy process
+        - One customer accounts for more than 50% of revenue
+        - Severe negative news, such as fraud, lawsuits with serious impacts, or facing financial crisis
+6. Brief Summary and Recommendations:
     - Summarize the company's current financial situation and provide advice regarding credit consideration for employees of this company
+    
+    Please analyze thoroughly to use the results in assessing the company's financial risk.
 
-    โปรดวิเคราะห์อย่างละเอียดเพื่อนำผลการวิเคราะห์ไปประกอบการตัดสินใจพิจารณาความเสี่ยงทางด้านการเงินของบริษัทต่อไป
-
-    Please structure your answer in clear paragraphs, use short sentences for easy reading, and use headings or bullet points for sub-topics as appropriate."""
+Please structure your answer in clear paragraphs, use short sentences for easy reading, and use headings or bullet points for sub-topics as appropriate."""
 
     human_message_prompt_company_fin = HumanMessagePromptTemplate.from_template(
         human_template_company_fin
@@ -377,7 +432,6 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
         messages_comp_info, temperature=0.0, max_tokens=4096, top_p=0.9999
     )
     return response.content if hasattr(response, "content") else str(response)
-
 
 def run_analysis_in_parallel(
     llm, company_name, data, fin_data, company_news, company_officers, comp_profile_df
@@ -407,7 +461,6 @@ def run_analysis_in_parallel(
 
 def fuzzy_match(x, keyword, threshold=98):
     return fuzz.partial_ratio(x.lower(), keyword.lower()) >= threshold
-
 
 
 def extract_table_data(data):
@@ -663,6 +716,7 @@ def process_and_display_results(company_name, llm):
 
     st.session_state.analysis_done = True
 
+
 def main():
     st.set_page_config(
         page_title="AI E.R.A. for Analyzing the Company's Financial",
@@ -737,18 +791,6 @@ def main():
                     st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูล: {e}")
                     st.warning("กรุณาระบุชื่อบริษัทใหม่อีกครั้ง")
 
-    # if st.session_state.analysis_done:
-    #     if st.button("ดาวน์โหลดผลการวิเคราะห์ (PDF)"):
-    #         try:
-    #             pdf = create_pdf_report(company_name, st.session_state.analysis_results)
-    #             st.download_button(
-    #                 label="คลิกเพื่อดาวน์โหลด PDF",
-    #                 data=pdf,
-    #                 file_name=f"{company_name}_analysis.pdf",
-    #                 mime="application/pdf",
-    #             )
-    #         except Exception as e:
-    #             st.error(f"เกิดข้อผิดพลาดในการสร้าง PDF: {e}")
     st.sidebar.markdown("---")
     st.sidebar.markdown("### เวอร์ชันแอปพลิเคชัน")
     st.sidebar.info("AI E.R.A. v1.0.0")
