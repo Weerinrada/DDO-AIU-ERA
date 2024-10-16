@@ -273,9 +273,7 @@ def format_analysis(analysis):
     return [line.strip() for line in analysis.split("\n") if line.strip()]
 
 
-from langchain.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate, ChatPromptTemplate
-
-def get_comp_info(llm, company_name, fin_data, data, company_news, company_officers):
+def get_comp_info(llm, company_name, fin_data, data, company_news, company_officers, extra_info=None):
     comp_profile = fin_data.get("assetProfile", {})
     
     system_template = """You are specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
@@ -305,7 +303,11 @@ def get_comp_info(llm, company_name, fin_data, data, company_news, company_offic
         - Website (must be provided, if not available, explain)
         - display all list company_officers names from {company_officers} (must be provided in English language only, if no information, explain), request answer in English language
     do not show any financial data.
-    Please structure your answer in clear paragraphs, use short sentences for easy reading, and use headings or bullet points for sub-topics as appropriate."""
+    Please structure your answer in clear paragraphs, use short sentences for easy reading, and use headings or bullet points for sub-topics as appropriate.
+
+    Additional information (if available):
+    {extra_info}
+    """
 
     human_message_prompt_company_detail = HumanMessagePromptTemplate.from_template(human_template_company_detail)
     
@@ -317,6 +319,7 @@ def get_comp_info(llm, company_name, fin_data, data, company_news, company_offic
         comp_profile=comp_profile,
         company_news=company_news,
         company_officers=company_officers,
+        extra_info=extra_info or "No additional information provided."
     ).to_messages()
 
     response = llm(messages_comp_detail, temperature=0.0, max_tokens=4096, top_p=0.99, top_k=250)
@@ -725,6 +728,7 @@ def main():
     st.sidebar.markdown("### เวอร์ชันแอปพลิเคชัน")
     st.sidebar.info("AI E.R.A. v1.0.0")
     st.sidebar.markdown("© 2024 AI-UNDERWRITING [DDO-Krungsri Auto]")
+
 
 if __name__ == "__main__":
     main()
