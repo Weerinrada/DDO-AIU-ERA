@@ -272,37 +272,43 @@ def get_financial_data(juristic_id, symbol=None):
 def format_analysis(analysis):
     return [line.strip() for line in analysis.split("\n") if line.strip()]
 
-
 def get_comp_info(llm, company_name, fin_data, data, company_news, company_officers, extra_info=None):
-    comp_profile = fin_data.get("assetProfile", {})
+    comp_profile = fin_data.get("assetProfile", {}) if isinstance(fin_data, dict) else {}
     
+    # แปลง DataFrame เป็น dict หรือ string ตามความเหมาะสม
+    if isinstance(data, pd.DataFrame):
+        data = data.to_dict(orient='records') if not data.empty else "No data available"
+    
+    if isinstance(company_officers, pd.DataFrame):
+        company_officers = company_officers.to_dict(orient='records') if not company_officers.empty else "No officer data available"
+
     system_template = """You are specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
     system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
     
-    human_template_company_detail = """Analyze the following data of the company {company_name} using {data} or {comp_profile} and give the answer in Thai language:
+    human_template_company_detail = """Analyze the following data of the company {company_name} and give the answer in Thai language:
 
     Company information:
     {comp_profile} and {data} 
 
-    and
+    Company news:
     {company_news}
 
     Please provide a comprehensive analysis of the company's data, including:
 
-    Company Overview: Summarize the company overview, including the full name. If the company name doesn't match or there's no information in the stock market, indicate that it's not a listed company and use information from {data} and {company_news}. If the company name matches or has information in the stock market, indicate that it's a listed company, using information from {comp_profile} and {company_news}. If there's no juristic ID, use information from {company_news} 
+    Company Overview: Summarize the company overview, including the full name. Indicate whether it's a listed company or not based on available information. Use information from {data} and {company_news}.
         - Registered capital
         - Registration date
         - Company status, e.g., still operating or dissolved
-        - Changes in company status (must be provided, if not available, explain)
-        - Juristic ID of the company
+        - Changes in company status (if available)
+        - Juristic ID of the company: {juristic_id}
         - Business size (S/M/L)
         - Business group
         - Type of juristic or company type
         - Company address or location (include postal code if available)
-        - Phone number (must be provided)
-        - Website (must be provided, if not available, explain)
-        - display all list company_officers names from {company_officers} (must be provided in English language only, if no information, explain), request answer in English language
-    do not show any financial data.
+        - Phone number (if available)
+        - Website (if available)
+        - Company officers: {company_officers}
+    Do not show any financial data.
     Please structure your answer in clear paragraphs, use short sentences for easy reading, and use headings or bullet points for sub-topics as appropriate.
 
     Additional information (if available):
@@ -319,7 +325,8 @@ def get_comp_info(llm, company_name, fin_data, data, company_news, company_offic
         comp_profile=comp_profile,
         company_news=company_news,
         company_officers=company_officers,
-        extra_info=extra_info or "No additional information provided."
+        extra_info=extra_info or "No additional information provided.",
+        juristic_id="0105561093893"
     ).to_messages()
 
     response = llm(messages_comp_detail, temperature=0.0, max_tokens=4096, top_p=0.99, top_k=250)
