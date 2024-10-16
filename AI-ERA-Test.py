@@ -289,8 +289,8 @@ def get_comp_info(
 
     Please provide a comprehensive analysis of the company's data, including:
 
-    Company Overview: Summarize the company overview, including the full name. If the company name doesn't match or there's no information in the stock market, indicate that it's not a listed company and use information from {data} and {company_news}. If the company name matches or has information in the stock market, indicate that it's a listed company, using information from {comp_profile}, {comp_profile_df}, and {company_news}. If there's no juristic ID, use information from {company_news} 
-        - Registered capital
+    Company Overview: Summarize the company overview, including the full name. If the company name doesn't match or there's no information in the stock market, indicate that it's not a listed company and use information from {data} and {company_news}. If the company name matches or has information in the stock market, indicate that it's a listed company, using information from {comp_profile}, {comp_profile_df}, and {company_news}. If there's no juristic ID, use information from {company_news}, request answer in Thai language
+        - Registered capital 
         - Registration date
         - Company status, e.g., still operating or dissolved
         - Changes in company status (must be provided, if not available, explain)
@@ -301,7 +301,7 @@ def get_comp_info(
         - Company address or location (include postal code if available)
         - Phone number (must be provided)
         - Website (must be provided, if not available, explain)
-        - display all list company_officers names from {company_officers} (must be provided in English language only, if no information, explain), request answer in English language
+        - display all list company_officers names from {company_officers} (must be provided in English language only, if no information, explain), request answer in English language for only this part
     do not show any financial data.
     Please structure your answer in clear paragraphs, use short sentences for easy reading, and use headings or bullet points for sub-topics as appropriate."""
 
@@ -324,7 +324,6 @@ def get_comp_info(
         messages_comp_detail, temperature=0.0, max_tokens=4096, top_p=0.99, top_k=250
     )
     return response.content if hasattr(response, "content") else str(response)
-
 
 
 def get_comp_fin(llm, company_name, fin_data, data, company_news):
@@ -354,7 +353,7 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
     - Analyze the suitability of approving leasing credit for employees of this company for car leasing product
     - Consider risk factors and positive factors that may affect employees' ability to repay debt
 
-5. Assess the financial risk of the company or organization in Thailand, categorizing it into levels 0-5 with conditions for each level as follows:
+5. Assess the financial risk of the company or organization in Thailand with giving the information that why you give this score, categorizing it into levels 0-5 with conditions for each level as follows:
         0 - No risk:
         - Liquidity Ratio > 2.0
         - Debt to Equity Ratio < 0.5
@@ -432,6 +431,7 @@ Please structure your answer in clear paragraphs, use short sentences for easy r
         messages_comp_info, temperature=0.0, max_tokens=4096, top_p=0.9999
     )
     return response.content if hasattr(response, "content") else str(response)
+
 
 def run_analysis_in_parallel(
     llm, company_name, data, fin_data, company_news, company_officers, comp_profile_df
