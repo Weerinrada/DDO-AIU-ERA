@@ -133,49 +133,60 @@ def get_juristic_id_news(company_name, llm):
 
     print(f"Symbol AI: {symbol_ai}")
 
-    df = pd.read_csv("df_symbol.csv", encoding="utf-8-sig")
-    if (
-        "I apologize" in symbol_ai
-        or "I do not have any information" in symbol_ai
-        or "there is no stock symbol" in symbol_ai
-    ):
-        print("No stock symbol found for the given company.")
-        result = df[
-            # df["บริษัท"].str.contains(company_name, case=False, na=False, regex=False)
-            (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
-        ]
-        if result.empty:
-            print(f"No matching company found for '{comp_name}'")
+    url = "https://www.set.or.th/dat/eod/listedcompany/static/listedCompanies_th_TH.xls"
+    response = requests.get(url)
+    print("ดึง listed company สำเร็จ")
+    if response.status_code == 200:
+        # dfs = pd.read_html(response.text)
+        dfs = pd.read_html(StringIO(response.text))
+        df = dfs[0]
+        df.columns = df.iloc[1]
+        df = df.iloc[2:].reset_index(drop=True)
+        print("DF: ", df.head())
+        if (
+            "I apologize" in symbol_ai
+            or "I do not have any information" in symbol_ai
+            or "there is no stock symbol" in symbol_ai
+        ):
+            print("No stock symbol found for the given company.")
+            result = df[
+                # df["บริษัท"].str.contains(company_name, case=False, na=False, regex=False)
+                (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
+            ]
+            if result.empty:
+                print(f"No matching company found for '{comp_name}'")
+            else:
+                print(f"Found company information without stock symbol:")
+            print(result)
         else:
-            print(f"Found company information without stock symbol:")
-        print(result)
-    else:
-        result = df[
-            (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
-            & (df["หลักทรัพย์"] == symbol_ai)
-        ]
-        if result.empty:
-            print(
-                f"No matching company found for '{comp_name}' with symbol '{symbol_ai}'"
-            )
+            result = df[
+                (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
+                & (df["หลักทรัพย์"] == symbol_ai)
+            ]
+            if result.empty:
+                print(
+                    f"No matching company found for '{comp_name}' with symbol '{symbol_ai}'"
+                )
+            else:
+                print(f"Found company information:")
+            print(result)
+
+        if not result.empty:
+            symbol = result.iloc[0]["หลักทรัพย์"]
+            symbol_with_bk = f"{symbol}.BK"
+            comp_profile = df[df["หลักทรัพย์"] == symbol]
         else:
-            print(f"Found company information:")
-        print(result)
+            symbol_with_bk = None
+            comp_profile = result
 
-    if not result.empty:
-        symbol = result.iloc[0]["หลักทรัพย์"]
-        symbol_with_bk = f"{symbol}.BK"
-    else:
-        symbol_with_bk = None
+    # if symbol_with_bk is None:
+    #     comp_profile = pd.DataFrame()
+    # else:
+    #     comp_profile = df[df["หลักทรัพย์"] == symbol]
 
-    if symbol_with_bk is None:
-        comp_profile = pd.DataFrame()
-    else:
-        comp_profile = df[df["หลักทรัพย์"] == symbol]
-
-    print(comp_profile)
-
+    print("Comp Profile: ", comp_profile)
     start_search = time.time()
+    print("\n เริ่ม search ข้อมูล 1")
     result_query = search_news(f"ข่าวเกี่ยวกับ {comp_name}")
     company_news = [
         {
@@ -185,11 +196,32 @@ def get_juristic_id_news(company_name, llm):
         }
         for item in result_query.get("items", [])
     ]
+    print(company_news)
+    print("\n เริ่ม search ข้อมูล 2")
+
+    result_search = search(f"ข่าว + {comp_name}", num_results=10, advanced=True)
+    # result_s = {}
+    result_s = []
+    for i, result in enumerate(result_search):
+        result_data = {
+            "title": result.title,
+            "url": result.url,
+            "snippet": result.description,
+        }
+        # result_s[f"result_{i}"] = result_data
+        result_s.append(result_data)
+
+    print(result_s)
+    print("\n เริ่ม รวมข้อมูล 1 + 2")
+
+    company_news.append(result_s)
+    print("Company Appended: ", company_news)
+
     print(f"\n Running time process Search for News: {time.time() - start_search}")
 
     # else:
     #     symbol_with_bk = None
-    return juristic_id, symbol_with_bk, company_news, juris_id
+    return juristic_id, symbol_with_bk, company_news, juris_id, comp_profile
 
 
 def get_financial_data(juristic_id, symbol=None):
@@ -552,35 +584,52 @@ def display_feedback():
             st.markdown(get_feedback, unsafe_allow_html=True)
 
 
+
 def process_and_display_results(company_name, llm):
-    juristic_id, symbol, company_news, juris_id = get_juristic_id_news(
+    juristic_id, symbol, company_news, juris_id, comp_profile_df = get_juristic_id_news(
         company_name=company_name, llm=llm
     )
-    print("Symbol: ", symbol)
+
+    missing_data = []
+    if not symbol:
+        missing_data.append("Symbol")
     if not juristic_id or any(
         phrase in juristic_id
         for phrase in ["ขออภัยค่ะ", "ไม่มีเลขทะเบียนนิติบุคคล", "ไม่พบข้อมูล", "ไม่สามารถค้นหาได้"]
     ):
-        st.error(f"ไม่พบข้อมูลของบริษัท {company_name}")
-        st.warning("กรุณาระบุชื่อบริษัทใหม่อีกครั้ง")
-        return
+        missing_data.append("เลขทะเบียนนิติบุคคล")
 
-    slowly_display_text(
-        f"ผลการค้นหาเลขนิติบุคคลของ {company_name} คือ {juristic_id}", delay=0.009
-    )
+    if missing_data:
+        st.warning(f"ไม่พบข้อมูลต่อไปนี้สำหรับบริษัท {company_name}: {', '.join(missing_data)}")
+
+    print("Symbol: ", symbol)
+
+    if juristic_id and not any(
+        phrase in juristic_id
+        for phrase in ["ขออภัยค่ะ", "ไม่มีเลขทะเบียนนิติบุคคล", "ไม่พบข้อมูล", "ไม่สามารถค้นหาได้"]
+    ):
+        slowly_display_text(
+            f"ผลการค้นหาเลขนิติบุคคลของ {company_name} คือ {juristic_id}", delay=0.009
+        )
 
     fin_data, data, url_fin = get_financial_data(juristic_id=juristic_id, symbol=symbol)
 
-    officers = fin_data["assetProfile"].get("companyOfficers", [])
+    officers = fin_data.get("assetProfile", {}).get("companyOfficers", [])
     officer_names = [officer["name"] for officer in officers if "name" in officer]
     officer_title = [officer["title"] for officer in officers if "title" in officer]
-    company_officers = pd.DataFrame(officer_names, officer_title).reset_index()
+    company_officers = pd.DataFrame({"Title": officer_title, "Name": officer_names})
 
     (
         formatted_company_details_analysis,
         formatted_financial_analysis,
     ) = run_analysis_in_parallel(
-        llm, company_name, data, fin_data, company_news, company_officers
+        llm,
+        company_name,
+        data,
+        fin_data,
+        company_news,
+        company_officers,
+        comp_profile_df,
     )
 
     st.subheader("ผลการค้นหาและวิเคราะห์ข้อมูล")
@@ -592,6 +641,8 @@ def process_and_display_results(company_name, llm):
     display_feedback()
 
     st.session_state.analysis_done = True
+
+
 
 
 def main():
