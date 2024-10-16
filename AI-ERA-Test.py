@@ -133,56 +133,47 @@ def get_juristic_id_news(company_name, llm):
 
     print(f"Symbol AI: {symbol_ai}")
 
-    url = "https://www.set.or.th/dat/eod/listedcompany/static/listedCompanies_th_TH.xls"
-    response = requests.get(url)
-    print("ดึง listed company สำเร็จ")
-    if response.status_code == 200:
-        # dfs = pd.read_html(response.text)
-        dfs = pd.read_html(StringIO(response.text))
-        df = dfs[0]
-        df.columns = df.iloc[1]
-        df = df.iloc[2:].reset_index(drop=True)
-        print("DF: ", df.head())
-        if (
-            "I apologize" in symbol_ai
-            or "I do not have any information" in symbol_ai
-            or "there is no stock symbol" in symbol_ai
-        ):
-            print("No stock symbol found for the given company.")
-            result = df[
-                # df["บริษัท"].str.contains(company_name, case=False, na=False, regex=False)
-                (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
-            ]
-            if result.empty:
-                print(f"No matching company found for '{comp_name}'")
-            else:
-                print(f"Found company information without stock symbol:")
-            print(result)
+    df = pd.read_csv("df_symbol.csv", encoding="utf-8-sig")
+    if (
+        "I apologize" in symbol_ai
+        or "I do not have any information" in symbol_ai
+        or "there is no stock symbol" in symbol_ai
+    ):
+        print("No stock symbol found for the given company.")
+        result = df[
+            # df["บริษัท"].str.contains(company_name, case=False, na=False, regex=False)
+            (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
+        ]
+        if result.empty:
+            print(f"No matching company found for '{comp_name}'")
         else:
-            result = df[
-                (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
-                & (df["หลักทรัพย์"] == symbol_ai)
-            ]
-            if result.empty:
-                print(
-                    f"No matching company found for '{comp_name}' with symbol '{symbol_ai}'"
-                )
-            else:
-                print(f"Found company information:")
-            print(result)
-
-        if not result.empty:
-            symbol = result.iloc[0]["หลักทรัพย์"]
-            symbol_with_bk = f"{symbol}.BK"
-            comp_profile = df[df["หลักทรัพย์"] == symbol]
+            print(f"Found company information without stock symbol:")
+        print(result)
+    else:
+        result = df[
+            (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
+            & (df["หลักทรัพย์"] == symbol_ai)
+        ]
+        if result.empty:
+            print(
+                f"No matching company found for '{comp_name}' with symbol '{symbol_ai}'"
+            )
         else:
-            symbol_with_bk = None
-            comp_profile = result
+            print(f"Found company information:")
+        print(result)
 
-    # if symbol_with_bk is None:
-    #     comp_profile = pd.DataFrame()
-    # else:
-    #     comp_profile = df[df["หลักทรัพย์"] == symbol]
+    if not result.empty:
+        symbol = result.iloc[0]["หลักทรัพย์"]
+        symbol_with_bk = f"{symbol}.BK"
+    else:
+        symbol_with_bk = None
+
+    if symbol_with_bk is None:
+        comp_profile = pd.DataFrame()
+    else:
+        comp_profile = df[df["หลักทรัพย์"] == symbol]
+
+    print(comp_profile)
 
     print("Comp Profile: ", comp_profile)
     start_search = time.time()
