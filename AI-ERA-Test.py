@@ -443,7 +443,7 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
         - One customer accounts for more than 50% of revenue
         - Severe negative news, such as fraud, lawsuits with serious impacts, or facing financial crisis
 6. Brief Summary and Recommendations:
-    - Summarize the company's current financial situation and provide advice regarding credit consideration for employees of this company
+    - Summarize the company's current financial situation and provide advice regarding credit consideration for employees of this company (use bullet points)
     
     Please analyze thoroughly to use the results in assessing the company's financial risk.
 
