@@ -205,7 +205,8 @@ def get_juristic_id_news(company_name, llm):
     # print(result_s)
     print("\n เริ่ม รวมข้อมูล 1 + 2")
 
-    company_news.append(result_s)
+    result_s.append(company_news)
+    company_news = result_s
     # print("Company Appended: ", company_news)
 
     print(f"\n Running time process Search for News: {time.time() - start_search}")
@@ -229,6 +230,10 @@ def get_financial_data(juristic_id, symbol=None):
                 "url": f"https://data.creden.co/company/general/{comp_id}",
             },
             {
+                "title": "ข้อมูลบริษัทจาก data for thai",
+                "url": f"https://www.dataforthai.com/company/{comp_id}",
+            },
+            {
                 "title": "ข้อมูลบริษัทจาก SET",
                 "url": f"https://www.set.or.th/th/market/product/stock/quote/{new_symbol}/financial-statement/company-highlights",
             },
@@ -238,7 +243,11 @@ def get_financial_data(juristic_id, symbol=None):
             {
                 "title": "ข้อมูลบริษัทจาก Creden data",
                 "url": f"https://data.creden.co/company/general/{comp_id}",
-            }
+            },
+            {
+                "title": "ข้อมูลบริษัทจาก data for thai",
+                "url": f"https://www.dataforthai.com/company/{comp_id}",
+            },
         ]
 
     if symbol:
@@ -260,11 +269,37 @@ def get_financial_data(juristic_id, symbol=None):
         }
 
     url = f"https://data.creden.co/company/general/{comp_id}"
+    url2 = f"https://www.dataforthai.com/company/{comp_id}"
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
     }
-    response = requests.get(url, headers=headers)
-    data = clean_html(response.text)
+
+    data = ""
+    data2 = ""
+
+    # จัดการกับ URL แรก
+    try:
+        response = requests.get(
+            url, headers=headers, timeout=2
+        )  # กำหนด timeout เป็น 10 วินาที
+        response.raise_for_status()  # ตรวจสอบ HTTP status code
+        data = clean_html(response.text)
+    except requests.exceptions.RequestException as e:
+        print(f"Error connecting to {url}: {e}")
+        data = "Failed to connect to data.creden.co"
+
+    # จัดการกับ URL ที่สอง
+    try:
+        response2 = requests.get(url2, headers=headers, timeout=2)
+        response2.raise_for_status()  # ตรวจสอบ HTTP status code
+        data2 = clean_html(response2.text)
+    except requests.exceptions.RequestException as e:
+        print(f"Error connecting to {url2}: {e}")
+        data2 = "Failed to connect to dataforthai.com"
+
+    # รวมข้อมูลทั้งสอง (ถ้าไม่มีการเชื่อมต่อ ข้อมูลจะเป็นข้อความแจ้งเตือนแทน)
+    data = data2 + data
 
     return fin_data, data, url_fin
 
@@ -324,7 +359,6 @@ def get_comp_info(
         messages_comp_detail, temperature=0.0, max_tokens=4096, top_p=0.99, top_k=250
     )
     return response.content if hasattr(response, "content") else str(response)
-
 
 
 def get_comp_fin(llm, company_name, fin_data, data, company_news):
@@ -432,7 +466,6 @@ Please structure your answer in clear paragraphs, use short sentences for easy r
         messages_comp_info, temperature=0.0, max_tokens=4096, top_p=0.9999
     )
     return response.content if hasattr(response, "content") else str(response)
-
 
 
 def run_analysis_in_parallel(
@@ -606,7 +639,12 @@ def display_financial_analysis(formatted_financial_analysis):
             st.markdown(financial_table)
             table_created = True
         elif "|" not in item and "\t" not in item and item.strip() != "":
-            slowly_display_text(item, delay=0.001)
+            if re.match(r"^\d+\.\s", item.strip()) or item.strip().endswith(":"):
+                slowly_display_text(f"**{item.strip()}**", delay=0.001)
+                # markdown(f"**{blue(item.strip())}**", unsafe_allow_html=True)
+                # st.markdown(f"## {item.strip()}")
+            else:
+                slowly_display_text(item, delay=0.001)
 
 
 def display_references(company_news, url_fin):
