@@ -657,8 +657,8 @@ def process_and_display_results(company_name, llm):
     ):
         missing_data.append("เลขทะเบียนนิติบุคคล")
 
-    if missing_data:
-        st.warning(f"ไม่พบข้อมูลต่อไปนี้สำหรับบริษัท {company_name}: {', '.join(missing_data)}")
+    # if missing_data:
+    #     st.warning(f"ไม่พบข้อมูลต่อไปนี้สำหรับบริษัท {company_name}: {', '.join(missing_data)}")
 
     print("Symbol: ", symbol)
 
