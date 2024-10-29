@@ -152,20 +152,21 @@ def get_juristic_id_news(company_name, llm):
         print(result)
     else:
         result = df[
-            #(df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
-            #& 
+            # (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
+            # &
             (df["หลักทรัพย์"] == symbol_ai)
         ]
         result = result[
             result["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name, threshold=90))
         ]
+
         if result.empty:
             print(
                 f"No matching company found for '{comp_name}' with symbol '{symbol_ai}'"
             )
         else:
             print(f"Found company information:")
-        # print(result)
+        print(result)
 
     if not result.empty:
         symbol = result.iloc[0]["หลักทรัพย์"]
