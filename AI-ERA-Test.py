@@ -98,12 +98,13 @@ def get_juristic_id_news(company_name, llm):
     prompt = f"""เลขทะเบียนนิติบุคคล of {company_name} using information from {juris_id}?
     Please provide only the เลขทะเบียน หรือ เลขนิติบุคคลของ or juristic id without any additional text. """
     comp_id = llm.invoke(prompt, temperature=0.0, top_p=0.99)
+
     juristic_id = (
         comp_id.content.strip() if hasattr(comp_id, "content") else str(comp_id).strip()
     )
     print(f"Juristic_id: {juristic_id}")
     url_juristic_id = f"https://data.creden.co/company/general/{juristic_id}"
-    
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
     }
@@ -113,7 +114,7 @@ def get_juristic_id_news(company_name, llm):
     prompt_comp_name = f"""What is the full company name in Thai language from {comp_data}? 
     Please provide only the company name without any additional text.
     without The full company name in Thai language is: """
-    response_comp_name = llm.invoke(prompt_comp_name, temperature=0.0, top_p=0.9999)
+    response_comp_name = llm.invoke(prompt_comp_name, temperature=0.0, top_p=1)
     comp_name = (
         response_comp_name.content.strip()
         if hasattr(response_comp_name, "content")
@@ -125,7 +126,7 @@ def get_juristic_id_news(company_name, llm):
     Please provide only the symbol without any additional text.
     """
 
-    response_symbol = llm.invoke(prompt_symbol, temperature=0.0, top_p=0.9999)
+    response_symbol = llm.invoke(prompt_symbol, temperature=0.0, top_p=1)
     if hasattr(response_symbol, "content"):
         symbol_ai = response_symbol.content.strip()
     else:
@@ -142,7 +143,7 @@ def get_juristic_id_news(company_name, llm):
         print("No stock symbol found for the given company.")
         result = df[
             # df["บริษัท"].str.contains(company_name, case=False, na=False, regex=False)
-            (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
+            (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name, threshold=98)))
         ]
         if result.empty:
             print(f"No matching company found for '{comp_name}'")
@@ -151,8 +152,11 @@ def get_juristic_id_news(company_name, llm):
         print(result)
     else:
         result = df[
-            (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name)))
-            & (df["หลักทรัพย์"] == symbol_ai)
+            # (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name, threshold=98)))
+            (df["หลักทรัพย์"] == symbol_ai)
+        ]
+        result = result[
+            result["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name, threshold=99))
         ]
         if result.empty:
             print(
@@ -370,9 +374,9 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
     {company_news} and {data}
     
 1. Analysis of financial statements and the company's financial situation. If it's a listed company, analyze from {fin_data}. If not a listed company in the stock market DO NOT Show any Data and explain why:
-    - Analyzing financial statements (Total revenue, Equity, Cost Of Revenue, Net Income, Profit (Loss) from Other Activities (with symbol +/-), Total Debt, Net Dept, for the past 3 years, (Must be provided data in table format only)
+    - Analyzing financial statements (Total revenue, Equity, Cost Of Revenue, Net Income, Profit (Loss) from Other Activities (with symbol +/-), Total Debt, Net Dept, for the past 3 years ถ้ามีไม่ครบ 3 ปี ใช้เท่าที่มีนับจากปีปัจจุบัน, (Must be provided data in table format only)
     - Shareholders' equity or Stockholders Equity
-    - Show liquidity indicators such as Return of Asset (ROA in %, yoy), Return of Equity (ROE in %, yoy), D/E Ratio (Debt to Equity Ratio), current ratio, and quick ratio
+    - Show liquidity indicators such as Return of Asset (ROA in %), Return of Equity (ROE in %), D/E Ratio (Debt to Equity Ratio), current ratio, and quick ratio
     - Summarize the company's financial liquidity
     - If some information is missing, explain why and how it might affect the analysis
 
