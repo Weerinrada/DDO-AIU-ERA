@@ -222,7 +222,7 @@ def get_financial_data(juristic_id, symbol=None):
     url_fin = None
     comp_id = juristic_id
 
-    if symbol or symbol.endswith(".BK"):
+    if symbol and symbol.endswith(".BK"):
         new_symbol = symbol.split(".")[0]
         url_fin = [
             {
