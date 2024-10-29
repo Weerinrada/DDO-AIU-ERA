@@ -97,13 +97,13 @@ def get_juristic_id_news(company_name, llm):
 
     prompt = f"""เลขทะเบียนนิติบุคคล of {company_name} using information from {juris_id}?
     Please provide only the เลขทะเบียน หรือ เลขนิติบุคคลของ or juristic id without any additional text. """
-    comp_id = llm.invoke(prompt, temperature=0.0, top_p=0.95)
+    comp_id = llm.invoke(prompt, temperature=0.0, top_p=0.99)
     juristic_id = (
         comp_id.content.strip() if hasattr(comp_id, "content") else str(comp_id).strip()
     )
     print(f"Juristic_id: {juristic_id}")
     url_juristic_id = f"https://data.creden.co/company/general/{juristic_id}"
-
+    
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
     }
@@ -113,7 +113,7 @@ def get_juristic_id_news(company_name, llm):
     prompt_comp_name = f"""What is the full company name in Thai language from {comp_data}? 
     Please provide only the company name without any additional text.
     without The full company name in Thai language is: """
-    response_comp_name = llm.invoke(prompt_comp_name, temperature=0.0, top_p=1)
+    response_comp_name = llm.invoke(prompt_comp_name, temperature=0.0, top_p=0.9999)
     comp_name = (
         response_comp_name.content.strip()
         if hasattr(response_comp_name, "content")
@@ -121,11 +121,11 @@ def get_juristic_id_news(company_name, llm):
     )
     print(f"Full company's Name: {comp_name}")
     # If not found, ask Claude for help
-    prompt_symbol = f"""What is the stock symbol or ชื่อย่อในตลาดหลักทรัพย์ for the {comp_name} using {comp_data}?
+    prompt_symbol = f"""What is the stock symbol or ชื่อย่อหลักทรัพย์ for the {comp_name} using {comp_data}?
     Please provide only the symbol without any additional text.
     """
 
-    response_symbol = llm.invoke(prompt_symbol, temperature=0.0, top_p=1)
+    response_symbol = llm.invoke(prompt_symbol, temperature=0.0, top_p=0.9999)
     if hasattr(response_symbol, "content"):
         symbol_ai = response_symbol.content.strip()
     else:
@@ -222,7 +222,7 @@ def get_financial_data(juristic_id, symbol=None):
     url_fin = None
     comp_id = juristic_id
 
-    if symbol and symbol.endswith(".BK"):
+    if symbol or symbol.endswith(".BK"):
         new_symbol = symbol.split(".")[0]
         url_fin = [
             {
@@ -314,7 +314,7 @@ def get_comp_info(
     comp_profile = fin_data["assetProfile"]
     system_template = """You are a female who is specialized in financial analysis and credit analysis for auto loans. Your task is to analyze financial data and provide insights."""
     system_message_prompt = SystemMessagePromptTemplate.from_template(system_template)
-    human_template_company_detail = """Analyze the following data of the company {company_name} using {data} or {comp_profile} and give the answer in Thai language:
+    human_template_company_detail = """Analyze the following data of the company {company_name} using {data} or {comp_profile} or {comp_profile_df} and give the answer in Thai language:
 
     Company information:
     {comp_profile} and {data} 
@@ -331,7 +331,7 @@ def get_comp_info(
         - Changes in company status (must be provided, if not available, explain)
         - Juristic ID of the company
         - Business size (S/M/L)
-        - Business group
+        - Business group หรือ กลุ่มธุรกิจ
         - Type of juristic or company type
         - Company address or location (include postal code if available)
         - Phone number (must be provided)
@@ -387,62 +387,8 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
 4. Considerations for Leasing Credit Approval based on {data}, {company_news}, {fin_data}:
     - Analyze the suitability of approving leasing credit for employees of this company for car leasing product
     - Consider risk factors and positive factors that may affect employees' ability to repay debt
-
-5. Assess the financial risk of the company or organization in Thailand with giving the information that why you give this score, categorizing it into levels 0-5 with conditions for each level as follows:
-        0 - No risk:
-        - Liquidity Ratio > 2.0
-        - Debt to Equity Ratio < 0.5
-        - Net Profit Margin > 20%
-        - Revenue Growth Rate > 15% per year
-        - Never defaulted on debt
-        - Good revenue diversification (no single customer exceeds 10% of total revenue)
-        - Positive news about business growth, innovation, or continuous market expansion
-
-        1 - Very low risk:
-        - Liquidity Ratio 1.5 - 2.0
-        - Debt to Equity Ratio 0.5 - 1.0
-        - Net Profit Margin 15% - 20%
-        - Revenue Growth Rate 10% - 15% per year
-        - Defaulted no more than once in the past 5 years
-        - One customer accounts for 10-20% of revenue
-        - Mostly positive news, with minor negative news that doesn't impact the business
-
-        2 - Low risk:
-        - Liquidity Ratio 1.2 - 1.49
-        - Debt to Equity Ratio 1.01 - 1.5
-        - Net Profit Margin 10% - 14.99%
-        - Revenue Growth Rate 5% - 9.99% per year
-        - Defaulted no more than twice in the past 5 years
-        - One customer accounts for 20-30% of revenue
-        - Equal mix of positive and negative news, but negative news is not severe
-
-        3 - Moderate risk:
-        - Liquidity Ratio 1.0 - 1.19
-        - Debt to Equity Ratio 1.51 - 2.0
-        - Net Profit Margin 5% - 9.99%
-        - Revenue Growth Rate 0% - 4.99% per year
-        - Defaulted three times in the past 5 years
-        - One customer accounts for 30-40% of revenue
-        - Increasing negative news, such as declining market share or operational issues
-
-        4 - High risk:
-        - Liquidity Ratio 0.8 - 0.99
-        - Debt to Equity Ratio 2.01 - 2.5
-        - Net Profit Margin 0% - 4.99%
-        - Revenue Growth Rate negative up to 5% per year
-        - Defaulted more than three times in the past 5 years
-        - One customer accounts for 40-50% of revenue
-        - Mostly negative news, such as loss of major clients, legal issues, or credit rating downgrades
-
-        5 - Very high risk:
-        - Liquidity Ratio < 0.8
-        - Debt to Equity Ratio > 2.5
-        - Net Profit Margin < 0% (loss)
-        - Revenue Growth Rate negative more than 5% per year
-        - In business rehabilitation or bankruptcy process
-        - One customer accounts for more than 50% of revenue
-        - Severe negative news, such as fraud, lawsuits with serious impacts, or facing financial crisis
-6. Brief Summary and Recommendations:
+    
+5. Brief Summary and Recommendations:
     - Summarize the company's current financial situation and provide advice regarding credit consideration for employees of this company (use bullet points)
     
     Please analyze thoroughly to use the results in assessing the company's financial risk.
