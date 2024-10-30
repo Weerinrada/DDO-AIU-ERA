@@ -152,11 +152,11 @@ def get_juristic_id_news(company_name, llm):
         print(result)
     else:
         result = df[
-                (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name, threshold=90)))
-                # &
-                # (df["หลักทรัพย์"] == symbol_ai)
-                # df["หลักทรัพย์"].apply(lambda x: fuzzy_match(x, symbol_ai, threshold=70))
-            ]
+            (df["บริษัท"].apply(lambda x: fuzzy_match(x, comp_name, threshold=90)))
+            # &
+            # (df["หลักทรัพย์"] == symbol_ai)
+            # df["หลักทรัพย์"].apply(lambda x: fuzzy_match(x, symbol_ai, threshold=70))
+        ]
 
         if result.empty:
             print(
@@ -374,9 +374,15 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
     {company_news} and {data}
     
 1. Analysis of financial statements and the company's financial situation. If it's a listed company, analyze from {fin_data}. If not a listed company in the stock market DO NOT Show any Data and explain why:
-    - Analyzing financial statements (Total revenue, Equity, Cost Of Revenue, Net Income, Profit (Loss) from Other Activities (with symbol +/-), Total Debt, Net Dept, for the past 3 years ถ้ามีไม่ครบ 3 ปี ใช้เท่าที่มีนับจากปีปัจจุบัน, (Must be provided data in table format only)
-    - Shareholders' equity or Stockholders Equity
-    - Show liquidity indicators such as Return of Asset (ROA in %), Return of Equity (ROE in %), D/E Ratio (Debt to Equity Ratio), current ratio, and quick ratio
+    - Show the following values for the past 3 years ถ้ามีไม่ครบ 3 ปี ใช้เท่าที่มีนับจากปีปัจจุบัน (Must be provided data in table format only)
+        - Total revenue
+        - สินทรัพย์รวม
+        - Total Liabilities Net Minority Interest
+        - Total Debt
+        - Total Equity Gross Minority Interest
+        - Net Income From Continuing Operation
+        - Net Minority Interest
+    - Show liquidity indicators such as Return of Asset (ROA in %), Return of Equity (ROE in %), D/E Ratio (Debt to Equity Ratio), current ratio, and quick ratio for current year
     - Summarize the company's financial liquidity
     - If some information is missing, explain why and how it might affect the analysis
 
