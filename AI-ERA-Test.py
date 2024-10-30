@@ -376,9 +376,8 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
 1. Analysis of financial statements and the company's financial situation. If it's a listed company, analyze from {fin_data}. If not a listed company in the stock market DO NOT Show any Data and explain why:
     - Show the following values for the past 3 years ถ้ามีไม่ครบ 3 ปี ใช้เท่าที่มีนับจากปีปัจจุบัน (Must be provided data in table format only)
         - Total revenue
-        - สินทรัพย์รวม
+        - Total Assets
         - Total Liabilities Net Minority Interest
-        - Total Debt
         - Total Equity Gross Minority Interest
         - Net Income From Continuing Operation
         - Net Minority Interest
