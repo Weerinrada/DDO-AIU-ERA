@@ -380,7 +380,6 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
         - Total Liabilities Net Minority Interest
         - Total Equity Gross Minority Interest
         - Net Income From Continuing Operation
-        - Net Minority Interest
     - Show liquidity indicators such as Return of Asset (ROA in %), Return of Equity (ROE in %), D/E Ratio (Debt to Equity Ratio), current ratio, and quick ratio for current year
     - Summarize the company's financial liquidity
     - If some information is missing, explain why and how it might affect the analysis
