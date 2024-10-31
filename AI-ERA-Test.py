@@ -374,7 +374,7 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
     {company_news} and {data}
     
 1. Analysis of financial statements and the company's financial situation. If it's a listed company, analyze from {fin_data}. If not a listed company in the stock market DO NOT Show any Data and explain why:
-    - Show the values of Total revenue, Total Assets, Total Liabilities Net Minority Interest, Total Equity Gross Minority Interest, and Net Income From Continuing Operation for the past 3 years (Must be provided data in table format only)
+    - Analyzing financial statements; final Total Assets, Total Liabilities Net Minority Interest, Total Equity Gross Minority Interest, Total of the Total revenue, and Total of the Net Income Common Stockholders for the past 3 years (Must be provided data in table format only)
     - Show liquidity indicators such as Return of Asset (ROA in %), Return of Equity (ROE in %), D/E Ratio (Debt to Equity Ratio), current ratio, and quick ratio for current year
     - Summarize the company's financial liquidity
     - If some information is missing, explain why and how it might affect the analysis
