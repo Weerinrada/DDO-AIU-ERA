@@ -379,6 +379,7 @@ def get_comp_fin(llm, company_name, fin_data, data, company_news):
     - Summarize the company's financial liquidity
     - If some information is missing, explain why and how it might affect the analysis
     
+    
 2. Trend Analysis:
     - Forecast trends of key financial indicators for the next 6 months
 
