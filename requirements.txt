@@ -6,7 +6,7 @@ requests == 2.32.3
 beautifulsoup4 == 4.12.2
 pandas == 2.2.2
 numpy == 1.25.2
-yfinance == 0.2.41
+yfinance == 0.2.48
 botocore == 1.34.162
 googlesearch_python == 1.2.5
 fuzzywuzzy == 0.18.0
