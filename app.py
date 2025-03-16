@@ -8,11 +8,25 @@ from datetime import datetime, timedelta
 from crawl4ai import AsyncWebCrawler
 from googlesearch import search
 import time
+from yahooquery import Ticker
 
 nest_asyncio.apply()  # แก้ปัญหา asyncio ใน Jupyter Notebook
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+# Load df_symbol.csv
+symbol_data = pd.read_csv("df_symbol.csv")
+
+
+async def fetch_financial_data(symbol):
+    try:
+        ticker = Ticker(f"{symbol}.BK")
+        financial_data = ticker.financial_data[f"{symbol}.BK"]
+        return financial_data
+    except Exception as e:
+        logging.error(f"Error fetching financial data: {e}")
+        return None
 
 
 # ฟังก์ชันค้นหาข่าวย้อนหลัง 12 เดือน
@@ -95,14 +109,30 @@ async def main(comp_name):
         options = []
         urls = []
         for line in extracted_text.splitlines():
+            # if "### [" in line and "](" in line:
+            #     option_text = line.split("[")[1].split("]")[0]
+            #     url_text = (
+            #         line.split("(")[1].split(")")[0].replace("</", "").replace(">", "")
+            #     )
+            #     options.append(option_text)
+            #     urls.append(url_text)
+            #     print("Option Text: ", option_text)
+            #     print("=================================== URL Text: ", url_text)
+
             if "### [" in line and "](" in line:
                 option_text = line.split("[")[1].split("]")[0]
+                # ดึง URL อันสุดท้ายจากวงเล็บ ()
                 url_text = (
-                    line.split("(")[1].split(")")[0].replace("</", "").replace(">", "")
+                    line.rsplit("(", 1)[-1]
+                    .rsplit(")", 1)[0]
+                    .replace("</", "")
+                    .replace(">", "")
                 )
+
                 options.append(option_text)
                 urls.append(url_text)
-
+                print("Option Text: ", option_text)
+                print("=================================== URL Text: ", url_text)
         if options:
             selected_option = st.selectbox(
                 "โปรดเลือกบริษัทเพื่อค้นหาข้อมูลและข่าวเพิ่มเติม",
@@ -116,6 +146,7 @@ async def main(comp_name):
 
                 scraped_data = await scrape_data(selected_url)
                 scraped_data = scraped_data.replace("|", "")
+                print(f"Type ของ scraped_data: {type(scraped_data)}")
                 print(f"Scraped Data : \n{scraped_data}")
                 if scraped_data:
                     # สร้าง dictionary สำหรับข้อมูลที่ต้องการ
@@ -123,11 +154,12 @@ async def main(comp_name):
                         "ชื่อนิติบุคคล": None,
                         "ชื่อนิติบุคคลภาษาอังกฤษ": None,
                         "เลขทะเบียน": None,
+                        "ชื่อย่อหลักทรัพย์": None,
                         "วันที่จดทะเบียน": None,
                         "สถานภาพกิจการ": None,
                         "วันที่เลิก": None,
                         "ประเภทธุรกิจ": None,
-                        "ทุนจดทะเบียน": None,
+                        "ทุนจดทะเบียน (บาท)": None,
                         "มูลค่าบริษัท": None,
                         "ขนาดธุรกิจ": None,
                         "หมวดธุรกิจ": None,
@@ -152,6 +184,15 @@ async def main(comp_name):
                             .split("\n")[0]
                             .strip()
                         )
+                    if "ชื่อย่อหลักทรัพย์" in scraped_data:
+                        # company_info["ชื่อย่อหลักทรัพย์"] = (
+                        #     scraped_data.split("ชื่อย่อหลักทรัพย์")[1].split("\n")[0].strip()
+                        # )
+                        match = re.search(
+                            r"\[(.*?)\]", scraped_data.split("ชื่อย่อหลักทรัพย์")[1]
+                        )
+                        if match:
+                            company_info["ชื่อย่อหลักทรัพย์"] = match.group(1).strip()
                     if "วันเดือนปีที่จดทะเบียน" in scraped_data:
                         company_info["วันที่จดทะเบียน"] = (
                             scraped_data.split("วันเดือนปีที่จดทะเบียน")[1]
@@ -171,7 +212,7 @@ async def main(comp_name):
                             scraped_data.split("ประเภทธุรกิจ")[1].split("\n")[0].strip()
                         )
                     if "ทุนจดทะเบียนปัจจุบัน (บาท)" in scraped_data:
-                        company_info["ทุนจดทะเบียน"] = (
+                        company_info["ทุนจดทะเบียน (บาท)"] = (
                             scraped_data.split("ทุนจดทะเบียนปัจจุบัน (บาท)")[1]
                             .split("\n")[0]
                             .strip()
@@ -215,16 +256,43 @@ async def main(comp_name):
                             .strip()
                             .replace(" คลิกเพื่ออัพเดท", "")
                         )
-                    # สร้าง DataFrame ในรูปแบบ long form
-                    long_form_data = []
-                    for key, value in company_info.items():
-                        long_form_data.append({"หัวข้อ": key, "ข้อมูล": value})
+                    # Check symbol data
+                    symbol_row = symbol_data[
+                        symbol_data["หลักทรัพย์"] == company_info["ชื่อย่อหลักทรัพย์"]
+                    ]
+                    if not symbol_row.empty:
+                        # company_info["ชื่อย่อหลักทรัพย์"] = symbol_row['ชื่อย่อหลักทรัพย์'].values[0]
+                        company_info["เบอร์โทร"] = symbol_row["เบอร์โทร"].values[0]
+                        company_info["เว็บไซต์"] = symbol_row["เว็บไซต์"].values[0]
 
-                    # แปลงข้อมูลเป็น DataFrame ไม่ต้องเอา index มาแสดง
-                    df = pd.DataFrame(long_form_data).set_index("หัวข้อ")
-                    # df = pd.DataFrame(long_form_data)
-                    st.write(df)
+                    # Fetch financial data if symbol exists
+                    if company_info["ชื่อย่อหลักทรัพย์"]:
+                        financial_data = await fetch_financial_data(
+                            company_info["ชื่อย่อหลักทรัพย์"]
+                        )
+                        if financial_data:
+                            financial_data = financial_data.get("financialData", {})
+                            # company_info["ทุนจดทะเบียน (บาท)"] = financial_data.get("marketCap")
+                            # company_info["มูลค่าบริษัท"] = financial_data.get("enterpriseValue")
+                            # company_info["ขนาดธุรกิจ"] = financial_data.get("totalRevenue")
+                    # Display company info
+                    st.write(
+                        pd.DataFrame(
+                            list(company_info.items()), columns=["หัวข้อ", "ข้อมูล"]
+                        )
+                    )
+                    st.write("### Financial Data")
+                    st.write(financial_data)
+                    # # สร้าง DataFrame ในรูปแบบ long form
+                    # long_form_data = []
+                    # for key, value in company_info.items():
+                    #     long_form_data.append({"หัวข้อ": key, "ข้อมูล": value})
 
+                    # # แปลงข้อมูลเป็น DataFrame ไม่ต้องเอา index มาแสดง
+                    # df = pd.DataFrame(long_form_data).set_index("หัวข้อ")
+                    # # df = pd.DataFrame(long_form_data)
+                    # st.write(df)
+                    print(company_info)
                     # ค้นหาข่าวย้อนหลัง 12 เดือน
                     news_results = await search_news(comp_name=company_info["ชื่อนิติบุคคล"])
 

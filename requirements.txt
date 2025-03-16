@@ -10,3 +10,4 @@ yfinance == 0.2.48
 botocore == 1.34.162
 googlesearch_python == 1.2.5
 fuzzywuzzy == 0.18.0
+yahooquery == 2.3.7
