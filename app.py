@@ -22,7 +22,7 @@ symbol_data = pd.read_csv("df_symbol.csv")
 async def fetch_financial_data(symbol):
     try:
         ticker = Ticker(f"{symbol}.BK")
-        financial_data = ticker.financial_data[f"{symbol}.BK"]
+        financial_data = ticker.balance_sheet()
         return financial_data
     except Exception as e:
         logging.error(f"Error fetching financial data: {e}")
